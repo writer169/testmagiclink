@@ -1,82 +1,50 @@
+// Файл: src/lib/redis.ts (в вашем приложении testmagiclink - ПА)
+// Версия без комментариев внутри кода
+
 import { Redis } from '@upstash/redis';
 
-// Инициализация Redis клиента
 export const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-// Интерфейс для данных magic link токена
-export interface MagicLinkData {
+interface StoredMagicLinkData {
   appId: string;
-  createdAt: number;
-  expiresAt: number;
-  used?: boolean;
 }
 
-// Префикс для ключей magic link токенов
-const MAGIC_LINK_PREFIX = 'magic_link:';
+export interface MagicLinkDataInternal {
+  appId: string;
+}
 
-// Получение данных magic link токена
-export async function getMagicLinkData(token: string): Promise<MagicLinkData | null> {
+const MAGIC_LINK_PREFIX_FROM_GENERATOR = 'magic_link_token:';
+
+export async function getMagicLinkData(token: string): Promise<MagicLinkDataInternal | null> {
   try {
-    const key = `${MAGIC_LINK_PREFIX}${token}`;
-    const data = await redis.get<MagicLinkData>(key);
+    const key = `${MAGIC_LINK_PREFIX_FROM_GENERATOR}${token}`;
+    const data = await redis.get<StoredMagicLinkData>(key);
     
     if (!data) {
-      console.log(`Magic link token not found: ${token.substring(0, 8)}...`);
       return null;
     }
 
-    // Проверяем, не истек ли токен
-    if (data.expiresAt < Date.now()) {
-      console.log(`Magic link token expired: ${token.substring(0, 8)}...`);
-      // Удаляем истекший токен
-      await redis.del(key);
-      return null;
-    }
-
-    // Проверяем, не был ли токен уже использован
-    if (data.used) {
-      console.log(`Magic link token already used: ${token.substring(0, 8)}...`);
-      return null;
-    }
-
-    return data;
+    return { appId: data.appId };
   } catch (error) {
-    console.error('Error fetching magic link data:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error fetching magic link data (using generator\'s prefix):', error instanceof Error ? error.message : 'Unknown error');
     return null;
   }
 }
 
-// Помечаем токен как использованный
 export async function markTokenAsUsed(token: string): Promise<boolean> {
   try {
-    const key = `${MAGIC_LINK_PREFIX}${token}`;
-    const data = await redis.get<MagicLinkData>(key);
-    
-    if (!data) {
-      return false;
-    }
-
-    // Обновляем данные, помечая токен как использованный
-    const updatedData: MagicLinkData = {
-      ...data,
-      used: true,
-    };
-
-    await redis.set(key, updatedData, {
-      exat: Math.floor(data.expiresAt / 1000), // TTL до истечения токена
-    });
-
-    return true;
+    const key = `${MAGIC_LINK_PREFIX_FROM_GENERATOR}${token}`;
+    const result = await redis.del(key);
+    return result > 0; 
   } catch (error) {
-    console.error('Error marking token as used:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error marking token as used by deleting (using generator\'s prefix):', error instanceof Error ? error.message : 'Unknown error');
     return false;
   }
 }
 
-// Проверка доступности Redis
 export async function checkRedisConnection(): Promise<boolean> {
   try {
     await redis.ping();
@@ -87,25 +55,19 @@ export async function checkRedisConnection(): Promise<boolean> {
   }
 }
 
-// Очистка истекших токенов (опциональная утилита для cron jobs)
+/*
 export async function cleanupExpiredTokens(): Promise<number> {
   try {
-    const pattern = `${MAGIC_LINK_PREFIX}*`;
+    const pattern = `${MAGIC_LINK_PREFIX_FROM_GENERATOR}*`;
     const keys = await redis.keys(pattern);
-    let deletedCount = 0;
-
-    for (const key of keys) {
-      const data = await redis.get<MagicLinkData>(key);
-      if (data && data.expiresAt < Date.now()) {
-        await redis.del(key);
-        deletedCount++;
-      }
-    }
-
-    console.log(`Cleaned up ${deletedCount} expired magic link tokens`);
-    return deletedCount;
+    // Логика удаления здесь была бы избыточной, если ПГС использует setex
+    // и Redis сам удаляет ключи по TTL.
+    // Если все же нужна, она должна быть адаптирована.
+    console.log(`Cleanup function (review logic): ${keys.length} keys found with prefix ${MAGIC_LINK_PREFIX_FROM_GENERATOR}.`);
+    return keys.length; 
   } catch (error) {
-    console.error('Error cleaning up expired tokens:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error in cleanup (using generator\'s prefix):', error instanceof Error ? error.message : 'Unknown error');
     return 0;
   }
 }
+*/
