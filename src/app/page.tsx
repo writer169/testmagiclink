@@ -1,11 +1,13 @@
+// src/app/page.tsx
+// Показываю полный файл с изменениями
+
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import LogoutButton from '@/components/LogoutButton';
+import AccountActions from '@/components/AccountActions'; // Импортируем новый компонент
 
 export default async function HomePage() {
   const session = await getSession();
 
-  // Если пользователь не авторизован, перенаправляем на страницу ошибки
   if (!session || !session.isAuthorized) {
     redirect('/auth/error?error=unauthorized&message=Authentication required');
   }
@@ -78,24 +80,9 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Actions Card */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Account Actions
-            </h2>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <LogoutButton />
-              
-              <button 
-                onClick={() => window.location.reload()}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-              >
-                Refresh Session
-              </button>
-            </div>
-          </div>
-
+          {/* Actions Card - теперь это отдельный Клиентский Компонент */}
+          <AccountActions /> 
+          
           {/* Footer */}
           <div className="text-center mt-12 text-gray-500">
             <p>Your session will automatically refresh as you browse the application.</p>
