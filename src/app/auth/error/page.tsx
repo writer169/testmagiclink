@@ -50,6 +50,22 @@ function ErrorContent() {
           color: 'text-blue-600',
           bgColor: 'bg-blue-100',
         };
+      case 'logged_out':
+        return {
+          title: 'Logged Out',
+          description: 'You have been successfully logged out.',
+          icon: '👋',
+          color: 'text-green-600',
+          bgColor: 'bg-green-100',
+        };
+      case 'logout_error':
+        return {
+          title: 'Logout Completed',
+          description: 'Logout completed with some errors.',
+          icon: '⚠️',
+          color: 'text-yellow-600',
+          bgColor: 'bg-yellow-100',
+        };
       default:
         return {
           title: 'Error',
