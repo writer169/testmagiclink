@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify, JWTPayload } from 'jose';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -7,8 +7,8 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 const SESSION_COOKIE_NAME = 'auth-session';
 const SESSION_DURATION = 60 * 24 * 60 * 60 * 1000; // 60 days in milliseconds
 
-// Типы для сессии
-export interface SessionPayload {
+// Типы для сессии - ИСПРАВЛЕННАЯ ВЕРСИЯ
+export interface SessionPayload extends JWTPayload {
   appId: string;
   authorizedAt: number;
   isAuthorized: boolean;
