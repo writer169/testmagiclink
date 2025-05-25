@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react'; // Импортируем Suspense
 import { useSearchParams, useRouter } from 'next/navigation';
 
 interface AuthState {
@@ -9,8 +9,9 @@ interface AuthState {
   success: boolean;
 }
 
-export default function MagicLinkPage() {
-  const searchParams = useSearchParams();
+// Основная логика страницы вынесена в отдельный компонент
+function MagicLinkVerificationContent() {
+  const searchParams = useSearchParams(); // useSearchParams используется здесь
   const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>({
     loading: true,
@@ -43,7 +44,7 @@ export default function MagicLinkPage() {
 
     // Отправляем токен для верификации
     verifyMagicLink(token);
-  }, [searchParams]);
+  }, [searchParams]); // Зависимость от searchParams
 
   const verifyMagicLink = async (token: string) => {
     try {
@@ -94,6 +95,7 @@ export default function MagicLinkPage() {
     }
   };
 
+  // UI остается таким же, как и был
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -156,5 +158,29 @@ export default function MagicLinkPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Экспортируемый по умолчанию компонент страницы
+export default function MagicLinkPage() {
+  return (
+    // Оборачиваем компонент, использующий useSearchParams, в Suspense
+    <Suspense fallback={ // Fallback UI, пока searchParams не доступен
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+              Loading Page...
+            </h1>
+            <p className="text-gray-600">
+              Please wait while we prepare the authentication page.
+            </p>
+          </div>
+        </div>
+      </div>
+    }>
+      <MagicLinkVerificationContent />
+    </Suspense>
   );
 }
